@@ -65,7 +65,8 @@ pi install npm:pi-purge
 | `/purge status` | モード、プロンプトのソース、読み込んだサイズ、および直前のターンで実際に何が変更されたかを表示します |
 | `/purge mode append\|replace\|strict` | 合成モードを切り替えます（デフォルトは `strict`） |
 | `/purge source <path\|embedded>` | プロンプトファイルを変更するか、同梱のサンプルに戻します。切り替えに失敗した場合はロールバックされます |
-| `/purge reload` | 編集後に外部プロンプトファイルを再読み込みします |
+
+CLI 版は `source` までです：`reload` と `help` は PI-Desktop プラグイン版の拡張機能にのみ存在します。
 
 ## モード
 
@@ -114,7 +115,7 @@ pi install npm:pi-purge
 ## 開発
 
 ```bash
-npm test   # two suites; both run against temporary agent dirs and assert nothing is written
+npm test   # 4 スイート：下の CLI 2 スイートに加えて、pi-desktop-plugin/test/ 配下のプラグイン 2 スイート。いずれも一時的な agent ディレクトリで実行され、何も書き込まれないことを検証します
 ```
 
 この拡張機能は、`before_agent_start` フック 1 つ、`session_start` フック 1 つ、および `/purge` コマンドを登録します。他のフックも、バックグラウンド処理も、ファイルの書き込みもありません。

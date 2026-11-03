@@ -3,7 +3,7 @@
 把 [pi-purge](https://github.com/ZiChuanLan/pi-purge)（pi CLI 扩展，v0.2.4）转成 PI-Desktop 插件，
 并且额外带一个**可视化控制面板**：开关、组合模式、人设来源、本会话实际切除结果都能直接点。
 
-> **适配并实测于 PI-Desktop v0.21.0**；版本下限 0.15.9（插件数据目录 API 的引入版本），更旧的宿主上两侧一起退到插件旁的 `state/`。
+> **适配并实测于 PI-Desktop v0.21.0**；版本下限 0.15.9（插件数据目录 API 的引入版本）。退到 `state/` 不是按宿主版本决定的：面板与扩展都先把 `<pi-desktop>/plugins/data/local.pi-purge` 排在第一位，只有**写入探测失败**才一起落到插件目录里的 `state/`；只有当宿主的 `pi.plugin.getDataPath()` 返回非默认布局时，插件目录里才会多出一个 `state-location.json` 指针。
 
 机制没有改：宿主身份句不是被压住，而是被**清掉**。
 
@@ -33,7 +33,7 @@
 manifest.json                      插件清单（agent.extension + ui.panel）
 main.cjs                           宿主侧入口：面板窗口、面板 RPC、状态文件读写
 extensions/pi-purge.extension.mjs  Agent sidecar 侧的 pi 扩展：before_agent_start 改写 + /purge 命令
-persona/embedded.md                内嵌示例人设（扩展与面板都读这一个文件，不存两份）
+persona/embedded.md                内嵌示例人设（面板与扩展都优先读这一个文件；扩展另留一份兜底文本，仅在该文件读不到时使用）
 renderer/index.html                面板文档
 renderer/panel.css                 面板样式（跟随宿主明暗主题）
 renderer/panel.js                  面板逻辑（轮询状态、写配置、拖拽人设文件）
@@ -85,8 +85,8 @@ state/                             插件目录内的兜底状态目录（仅数
 ```bash
 node pi-desktop-plugin/test/pi-purge.extension.test.mjs   # 可选：先自检
 ```
-然后对插件目录跑 `PluginPack`（或已生成的 `dist/local.pi-purge-0.2.4.piplug`），
-在 PI-Desktop 的**插件页 → 安装本地 .piplug** 选中它。安装时会提示授予
+然后自己打一个包：对插件目录跑 `PluginPack` 生成 `dist/local.pi-purge-<version>.piplug`（仓库不附带 `dist/`），
+或者直接从本仓库的 Releases 页面下载同一个包；在 PI-Desktop 的**插件页 → 安装本地 .piplug** 选中它。安装时会提示授予
 `agent.extension`（高风险）与 `ui.panel`。
 
 **B. 直接把这个文件夹当开发插件载入**
@@ -192,5 +192,6 @@ npm test                                                  # 上面两项 + 原 C
 
 ## 上游与许可
 
-机制、三种模式、内嵌人设文本都来自 [ZiChuanLan/pi-purge](https://github.com/ZiChuanLan/pi-purge)（MIT），
+机制本身 —— 把宿主身份段**清掉**而非压住、三种组合模式、内嵌人设文本 —— 移植自 [YuJunZhiXue/dsh-purge](https://github.com/YuJunZhiXue/dsh-purge)，
+并经 [ZiChuanLan/pi-purge](https://github.com/ZiChuanLan/pi-purge)（MIT）进入本仓库；CLI 扩展是后者的 fork。
 本文档与代码保留原作者署名。MIT 许可，LICENSE 见仓库根目录。

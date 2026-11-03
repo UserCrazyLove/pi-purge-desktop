@@ -25,8 +25,8 @@ a fork of [ZiChuanLan/pi-purge](https://github.com/ZiChuanLan/pi-purge) (MIT).
   mode cards (`strict` drops the harness system prompt entirely, `replace` cuts the
   identity line and bundled docs, `append` prepends the persona) and a live status readout
   showing the resolved mode, state directory, prompt sizes and last error.
-- Persona source picker: the bundled persona, or your own markdown file, accepted through
-  the file dialog and through drag-and-drop onto the panel.
+- Persona source picker: the bundled persona, or your own markdown file, given as an absolute
+  path in a text field and applied with the `使用这个文件` button, or dropped onto the panel.
 - Configuration persisted in the host's per-plugin data directory
   (`<pi-desktop>/plugins/data/local.pi-purge/config.json`), so `enabled`, `mode` and
   `source` survive a restart. The extension re-reads it on `session_start` and before each
@@ -65,8 +65,8 @@ a fork of [ZiChuanLan/pi-purge](https://github.com/ZiChuanLan/pi-purge) (MIT).
 
 The `extensions/pi-purge.ts` CLI extension is a fork of
 [ZiChuanLan/pi-purge](https://github.com/ZiChuanLan/pi-purge), MIT, Copyright (c) 2026
-ZiChuanLan. Its 0.2.x line covers the `--source` persona flag, environment-variable
-persona sources, and the prompt-rewrite modes that this plugin's panel drives. Those
+ZiChuanLan. Its 0.2.x line covers `PI_PURGE_SOURCE` and `/purge source` for persona sources, and the
+prompt-rewrite modes that this plugin's panel drives. Those
 changes are recorded upstream, not in this file; the sections above list only what the
 PI-Desktop plugin adds or changes on top.
 

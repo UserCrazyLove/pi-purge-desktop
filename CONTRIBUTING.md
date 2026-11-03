@@ -11,7 +11,7 @@ Open an issue with the bug report form and include:
 - PI-Desktop version, and the pi / `@earendil-works/pi-coding-agent` version.
 - The panel mode (`strict`, `replace`, or `append`), whether the plugin was enabled, and which persona source you selected.
 - A screenshot of the panel if the problem is visible there.
-- The whole `status.json` from the plugin state directory: it is small and holds the resolved state paths and the last error.
+- The whole `status.json` from the plugin state directory: it is small and holds the resolved mode, persona source, prompt sizes and the last error.
 - The matching lines of `%USERPROFILE%\.pi-desktop\logs\app\plugin.log` (`~/.pi-desktop/logs/app/plugin.log` on Linux).
 
 **Redact first.** `status.json`, the panel and the log can contain your persona text and persona file path: replace prompt
@@ -41,7 +41,7 @@ node pi-desktop-plugin/test/panel-host.test.mjs
 | --- | --- |
 | `package.json` | Root manifest (`name: pi-purge`, `type: module`); `npm test` chains the four suites |
 | `extensions/pi-purge.ts` | pi CLI extension, TypeScript, loaded by the `pi` CLI |
-| `test/*.mjs` | Two CLI test suites (prompt rewriting, env / `--source` handling) |
+| `test/*.mjs` | Two CLI test suites (prompt rewriting, `PI_PURGE_SOURCE` handling) |
 | `pi-desktop-plugin/manifest.json` | Plugin manifest: id `local.pi-purge`, version `0.2.4`, `main: main.cjs` |
 | `pi-desktop-plugin/main.cjs` | Host entry point: panel backend, config, status, state-directory resolution |
 | `pi-desktop-plugin/extensions/pi-purge.extension.mjs` | Agent sidecar extension: prompt rewrite and `/purge` |

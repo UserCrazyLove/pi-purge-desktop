@@ -14,9 +14,11 @@
 ## 安装
 
 ```bash
-完整带提示词： pi install git:github.com/ZiChuanLan/pi-purge@ffafeb9
-自定义提示词： pi install npm:pi-purge
+pi install git:github.com/ZiChuanLan/pi-purge@ffafeb9
+pi install npm:pi-purge
 ```
+
+两条命令二选一：第一条从 fork 仓库安装（完整带提示词），第二条从 npm 安装（要用自定义提示词时走这条）。
 
 然后在会话里：
 
@@ -43,7 +45,8 @@
 | `/purge status` | 当前模式、提示词来源、已加载字符数，以及上一轮实际改了什么 |
 | `/purge mode append\|replace\|strict` | 切换组合方式（默认 `strict`） |
 | `/purge source <路径\|embedded>` | 换提示词文件，或回到内置示例；切换失败会自动回滚 |
-| `/purge reload` | 改完外部文件后重新读取 |
+
+CLI 版到 `source` 为止：`reload` 与 `help` 只存在于 PI-Desktop 插件版扩展里。
 
 ## 模式
 
@@ -92,7 +95,7 @@
 ## 开发
 
 ```bash
-npm test   # 两个套件，均跑在临时 agent 目录里，并断言全程没有写任何文件
+npm test   # 四个套件：下面两套 CLI 套件，加上 pi-desktop-plugin/test/ 下的两套插件套件；均跑在临时 agent 目录里，并断言全程没有写任何文件
 ```
 
 实现上只注册一个 `before_agent_start` 钩子、一个 `session_start` 钩子和一个 `/purge` 命令，无其他钩子、无后台任务、无文件写入。

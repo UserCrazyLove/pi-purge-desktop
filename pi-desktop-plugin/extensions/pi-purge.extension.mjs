@@ -31,9 +31,10 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /**
- * Fallback for the bundled persona, used only if `persona/embedded.md` cannot be read.
- * The shipped default lives in that file, so the panel and this extension never hold two
- * copies of the same text.
+ * Last-resort copy of the bundled persona, used only when `persona/embedded.md` cannot be
+ * read. The shipped default lives in that file and both the panel and this extension read
+ * it from there, so this list must stay a plain fallback rather than a second source of
+ * truth: if you edit the file, mirror the change here or the two surfaces can disagree.
  */
 const EMBEDDED_PERSONA = [
 	"# Persona (example)",

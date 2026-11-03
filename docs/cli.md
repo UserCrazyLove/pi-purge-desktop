@@ -43,7 +43,8 @@ That is all. A short example prompt ships inside the package, so a fresh install
 | `/purge status` | Mode, prompt source, loaded size, and what the previous turn actually changed |
 | `/purge mode append\|replace\|strict` | Switch composition mode (default `strict`) |
 | `/purge source <path\|embedded>` | Change the prompt file, or go back to the bundled example; a failed switch rolls back |
-| `/purge reload` | Re-read an external prompt file after editing it |
+
+The CLI extension stops at `source`: `reload` and `help` exist only in the PI-Desktop plugin extension.
 
 ## Modes
 
@@ -92,7 +93,7 @@ Tool schemas are passed through the API `tools` parameter rather than the system
 ## Development
 
 ```bash
-npm test   # two suites; both run against temporary agent dirs and assert nothing is written
+npm test   # four suites: the two CLI suites below plus two plugin suites under pi-desktop-plugin/test/; all run against temporary agent dirs and assert nothing is written
 ```
 
 The extension registers one `before_agent_start` hook, one `session_start` hook, and a `/purge` command. No other hooks, no background work, no file writes.

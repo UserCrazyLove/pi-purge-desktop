@@ -18,14 +18,14 @@ Agent 平时是带着 pi 的宿主提示词跑的：身份句、内置文档段�
 <img src="docs/panel.png" width="400" alt="PI Purge 控制面板：总开关、模式卡片、人设来源与上一轮切除结果" />
 
 *示例状态，取自隔离的测试主目录：开关打开、`replace` 模式、内嵌人设，以及上一轮的实际切除结果——宿主提示词 9 842 字符 → 实际送出 7 315 字符。*
-> **适配版本：PI-Desktop v0.21.0**（本插件的开发与实测环境）。最低要求 0.15.9——插件数据目录 API 从该版本开始提供；更低的宿主上状态会退回到插件目录旁的 `state/`。
+> **适配版本：PI-Desktop v0.21.0**——本插件的开发与实测环境。版本下限 0.15.9，即状态所用的插件数据目录 API 的引入版本。
 
 ```text
 pi-purge-desktop/
 ├── pi-desktop-plugin/          交付物：manifest、宿主入口、面板、agent 扩展
 ├── extensions/pi-purge.ts      CLI 扩展（同一套机制，只有命令）
-├── docs/                       CLI 参考、设计说明
-└── test/                       4 个测试套件，零依赖
+├── docs/                       CLI 参考、面板截图
+└── test/                       两个 CLI 测试套件（另外两个在 pi-desktop-plugin/test/）
 ```
 
 ## 特性
@@ -104,7 +104,7 @@ pi-purge-desktop/
 
 解析顺序在两个进程里完全一致：宿主发现自己的数据目录不在默认位置时写下的 `state-location.json` 指针 → 插件数据目录 → `<插件目录>/state/` → `<plugins 目录>/data/<id>`。两侧都用「真写一次」来探测候选目录，所以不会对状态位置产生分歧。
 
-**为什么不放在插件目录里？** PI-Desktop 对开发态插件目录是递归监听的。状态文件放在那里就成了「写入 → 重载 → 再写入」的重载风暴。因此运行期状态一律不进 `pi-desktop-plugin/`，并且有一条测试专门断言这一点。
+**为什么不放在插件目录里？** PI-Desktop 对开发态插件目录是递归监听的。状态文件放在那里就成了「写入 → 重载 → 再写入」的重载风暴。因此运行期状态一律不进 `pi-desktop-plugin/`，唯一的例外是宿主数据目录不在默认布局时写下的 `state-location.json` 指针——并有两条测试断言除此之外什么都不写进去。
 
 ## 架构
 
@@ -124,7 +124,7 @@ flowchart LR
 ```
 
 - `main.cjs` 是 CommonJS 是有意的：仓库根的 `package.json` 是 `"type": "module"`，`.js` 入口会被当成 ESM 加载然后崩掉。PI-Desktop 自己的 pi 扩展导入器同样写 `main.cjs`。
-- 面板不碰文件系统，只走宿主的三条通道，每条 30 秒超时。
+- 面板不碰文件系统：读写都走宿主的通道（`purge.state`、`purge.setConfig`、`purge.reloadPersona`），另外用 `app.getAppearance` 取明暗偏好、用 `ui.showToast` 做提示。
 - agent 扩展在 `session_start` 和每轮之前都会重读 `config.json`，所以面板上的改动对**已经在跑的会话**也是下一条消息生效。
 
 ## 权限与安全
@@ -158,7 +158,7 @@ npm test        # 4 个套件：2 个 CLI、1 个扩展、1 个面板/宿主—�
 改动必须守住的硬约束，见 [CONTRIBUTING.md](CONTRIBUTING.md)：
 
 - 宿主入口保持 `main.cjs`；
-- 运行期不往 `pi-desktop-plugin/` 里写任何东西；
+- 运行期只允许往 `pi-desktop-plugin/` 写 `state-location.json` 这一个指针文件；
 - 面板与扩展的状态目录候选列表、写入探测逻辑必须一致；
 - 不联网，不新增权限。
 

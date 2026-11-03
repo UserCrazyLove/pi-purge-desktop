@@ -1,6 +1,6 @@
 # PI Purge for PI-Desktop
 
-[English](README.md) | [中文](README.zh-CN.md) · [CLI reference](docs/cli.md) · [日本語](docs/cli.ja.md)
+[English](README.md) | [中文](README.zh-CN.md) | [日本語](README.ja.md) · [CLI reference](docs/cli.md)
 
 [![CI](https://github.com/UserCrazyLove/pi-purge-desktop/actions/workflows/ci.yml/badge.svg)](https://github.com/UserCrazyLove/pi-purge-desktop/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/UserCrazyLove/pi-purge-desktop?include_prereleases)](https://github.com/UserCrazyLove/pi-purge-desktop/releases)
@@ -18,14 +18,14 @@ Turned off, nothing changes: no prompt rewrite, no disk reads, pi behaves exactl
 <img src="docs/panel.png" width="400" alt="PI Purge control panel: switch, mode cards, persona source and the last turn's cut" />
 
 *Sample state, captured from an isolated test home: switch on, `replace` mode, bundled persona, and the last turn's real cut — the host prompt went from 9 842 characters to 7 315 sent.*
-> **Adapted to PI-Desktop v0.21.0** — this plugin is developed and tested against that release. The version floor is 0.15.9, which introduced the plugin data-directory API; on an older host both sides fall back to a `state/` directory next to the plugin instead.
+> **Adapted to PI-Desktop v0.21.0** — the release this plugin is developed and tested against. The version floor is 0.15.9, which introduced the plugin data-directory API the state lives in.
 
 ```text
 pi-purge-desktop/
 ├── pi-desktop-plugin/          the deliverable — manifest, host entry, panel, agent extension
 ├── extensions/pi-purge.ts      the CLI extension (same mechanism, command only)
-├── docs/                       CLI reference, design notes
-└── test/                       4 suites, no dependencies
+├── docs/                       CLI reference, panel screenshot
+└── test/                       the two CLI suites (the two plugin suites live in pi-desktop-plugin/test/)
 ```
 
 ## Features
@@ -104,7 +104,7 @@ Two files, and only two, in the host's per-plugin data directory:
 
 Resolution order, identical in both processes: a `state-location.json` pointer written by the host when its data directory is somewhere else → the per-plugin data directory → `<plugin dir>/state/` → `<plugins dir>/data/<id>`. Both sides probe the candidate with a real write, so they can never disagree about where the state is.
 
-**Why not inside the plugin?** PI-Desktop watches a development plugin's directory recursively. A state file there turns into write → reload → write: a reload storm. Runtime state therefore stays out of `pi-desktop-plugin/`, and a test asserts that nothing is ever written into it.
+**Why not inside the plugin?** PI-Desktop watches a development plugin's directory recursively. A state file there turns into write → reload → write: a reload storm. Runtime state therefore stays out of `pi-desktop-plugin/`, the single exception being the `state-location.json` pointer the host writes when its data directory is not where the default layout says — and two tests assert that nothing else ever lands there.
 
 ## Architecture
 
@@ -124,7 +124,7 @@ flowchart LR
 ```
 
 - `main.cjs` is CommonJS on purpose: the repository root is `"type": "module"`, so a `.js` entry point would be loaded as ESM and crash. PI-Desktop's own pi-extension importer writes `main.cjs` for the same reason.
-- The panel never touches the filesystem; it goes through three host channels, each with a 30-second timeout.
+- The panel never touches the filesystem: it reads and writes through the host's panel channels (`purge.state`, `purge.setConfig`, `purge.reloadPersona`), plus `app.getAppearance` for the light/dark preference and `ui.showToast` for feedback.
 - The agent extension re-reads `config.json` on `session_start` and before every turn, so a panel edit applies to the next message of an already-running session.
 
 ## Permissions and safety
@@ -158,7 +158,7 @@ Tests isolate `USERPROFILE` / `HOME` into a temporary root and install a copy of
 Hard constraints for changes — see [CONTRIBUTING.md](CONTRIBUTING.md):
 
 - the host entry stays `main.cjs`;
-- nothing is written into `pi-desktop-plugin/` at runtime;
+- nothing but the `state-location.json` pointer is written into `pi-desktop-plugin/` at runtime;
 - panel and extension keep the same state-directory candidate list and the same write probe;
 - no network access, no new permissions.
 
