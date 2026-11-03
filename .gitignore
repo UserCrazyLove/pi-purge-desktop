@@ -1,0 +1,14 @@
+node_modules/
+*.tgz
+.DS_Store
+.msg.txt
+# 运行时生成物与本地实验现场（.sandbox 里可能有含明文 key 的配置备份，绝不入库）
+.sandbox/
+dist/
+.tmp-*
+# PI-Desktop 插件运行期状态（面板写的 config.json / 扩展写的 status.json）
+pi-desktop-plugin/state/
+# 打包产物（走 GitHub Releases，不入库）
+*.piplug
+# 宿主数据目录不在默认位置时才写进插件目录的指针文件
+state-location.json

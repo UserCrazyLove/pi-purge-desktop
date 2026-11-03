@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8" />
+		<title>PI Purge 控制面板</title>
+		<meta name="pi-plugin-chrome" content="v2" />
+		<link rel="stylesheet" href="panel.css" />
+	</head>
+	<body>
+		<!--
+			The host reserves exactly a transparent 46px drag band at the top and draws only its
+			own window capsule in it. With <meta name="pi-plugin-chrome" content="v2"> the panel
+			owns that space, so panel.css adds the top padding itself (and no sticky element is
+			placed under the band, which is not clickable outside the capsule).
+		-->
+		<main class="page">
+			<header class="page-head">
+				<div>
+					<h1>PI Purge</h1>
+					<p class="subtitle">
+						会话级系统提示词开关 · agent 扩展 <code>local.pi-purge</code>
+					</p>
+				</div>
+				<div class="pill" id="state-pill" data-state="off">读取中…</div>
+			</header>
+
+			<section class="card" id="power-card">
+				<div class="power-row">
+					<div class="power-copy">
+						<h2>总开关</h2>
+						<p id="power-note">正在读取插件状态…</p>
+					</div>
+					<button class="btn primary" id="toggle-button" type="button" disabled>开启</button>
+				</div>
+			</section>
+
+			<section class="card">
+				<h2>组合模式</h2>
+				<p class="hint">改完在<strong>下一条消息</strong>生效；<code>/purge mode …</code> 与这里是同一个开关。</p>
+				<div class="modes" id="modes"></div>
+			</section>
+
+			<section class="card">
+				<h2>人设来源</h2>
+				<div class="source-tabs" id="source-tabs">
+					<button class="tab" type="button" data-kind="embedded">内嵌示例</button>
+					<button class="tab" type="button" data-kind="file">本地文件</button>
+				</div>
+				<div class="source-file" id="source-file">
+					<input
+						type="text"
+						id="source-input"
+						spellcheck="false"
+						placeholder="C:/prompts/my-instructions.md"
+					/>
+					<div class="row">
+						<button class="btn" id="source-save" type="button">使用这个文件</button>
+						<button class="btn ghost" id="source-reload" type="button">重新读取</button>
+					</div>
+					<p class="hint" id="drop-hint">
+						也可以把 <code>.md</code> 文件直接拖到本窗口，路径会自动填进来。
+					</p>
+				</div>
+				<div class="preview-meta" id="preview-meta"></div>
+				<pre class="preview" id="preview"></pre>
+			</section>
+
+			<section class="card">
+				<h2>本会话实时状态</h2>
+				<dl class="facts" id="facts"></dl>
+			</section>
+
+			<section class="card">
+				<h2>命令速查</h2>
+				<table class="commands">
+					<tbody>
+						<tr>
+							<td><code>/purge</code></td>
+							<td>开 / 关（切换）</td>
+						</tr>
+						<tr>
+							<td><code>/purge on</code> · <code>off</code></td>
+							<td>显式开启或关闭</td>
+						</tr>
+						<tr>
+							<td><code>/purge status</code></td>
+							<td>模式、人设、上一轮切除情况</td>
+						</tr>
+						<tr>
+							<td><code>/purge mode strict|replace|append</code></td>
+							<td>切换组合模式</td>
+						</tr>
+						<tr>
+							<td><code>/purge source &lt;绝对路径|embedded&gt;</code></td>
+							<td>换人设文件，或回到内嵌示例</td>
+						</tr>
+						<tr>
+							<td><code>/purge reload</code></td>
+							<td>改完人设文件后重新读取</td>
+						</tr>
+					</tbody>
+				</table>
+				<p class="hint">
+					命令面板搜索「PI Purge」还有：打开本面板、开/关当前会话。
+				</p>
+			</section>
+
+			<footer class="page-foot">
+				<span id="foot-note">—</span>
+			</footer>
+		</main>
+		<script src="panel.js"></script>
+	</body>
+</html>

@@ -1,0 +1,80 @@
+{
+	"schemaVersion": 1,
+	"id": "local.pi-purge",
+	"name": "PI Purge",
+	"version": "0.2.4",
+	"description": "把宿主系统提示词里的身份段整段清掉，只发人设 + 工作目录，或按 append/replace/strict 三种模式组合。带可视化控制面板，并保留 /purge 命令。",
+	"author": "ZiChuanLan（PI-Desktop 移植）",
+	"license": "MIT",
+	"homepage": "https://github.com/UserCrazyLove/pi-purge-desktop",
+	"categories": [
+		"developer-tools",
+		"productivity"
+	],
+	"main": "main.cjs",
+	"engines": {
+		"piDesktop": ">=0.15.9"
+	},
+	"activationEvents": [
+		"onStartup",
+		"onCommand:pi-purge.openPanel",
+		"onCommand:pi-purge.toggle"
+	],
+	"permissions": [
+		"agent.extension",
+		"ui.panel"
+	],
+	"ui": {
+		"panel": "renderer/index.html",
+		"width": 660,
+		"height": 840,
+		"title": {
+			"en": "PI Purge",
+			"zh-CN": "PI Purge 控制面板"
+		}
+	},
+	"contributes": {
+		"commands": [
+			{
+				"id": "pi-purge.openPanel",
+				"title": "PI Purge: 打开控制面板",
+				"keywords": [
+					"purge",
+					"破限",
+					"人设",
+					"系统提示词",
+					"persona",
+					"system prompt"
+				],
+				"category": "PI Purge"
+			},
+			{
+				"id": "pi-purge.toggle",
+				"title": "PI Purge: 开/关当前会话",
+				"keywords": [
+					"purge",
+					"toggle",
+					"开关",
+					"破限"
+				],
+				"category": "PI Purge"
+			}
+		],
+		"agentExtensions": [
+			"extensions/pi-purge.extension.mjs"
+		]
+	},
+	"i18n": {
+		"en": {
+			"name": "PI Purge",
+			"description": "Session-scoped system-prompt switch with a control panel: drop the harness identity section entirely (strict), cut only the identity line and bundled docs (replace), or prepend the persona (append). Registers the /purge command in the agent.",
+			"safetyNotes": "High-risk agent.extension: the extension runs inside the agent sidecar with Node access and rewrites the outgoing system prompt for the session. It reads one persona file that you name yourself, reads and writes only its own state directory, opens no network connection, and writes no prompt content anywhere else. Only load it in a harness you are entitled to administer."
+		},
+		"zh-CN": {
+			"name": "PI Purge",
+			"description": "会话级系统提示词开关，带可视化面板：strict 整段丢掉宿主提示词，replace 只切身份句与内置文档段，append 只把人设挂到头部。同时在 agent 里注册 /purge 命令。",
+			"safetyNotes": "高风险 agent.extension：扩展在 Agent sidecar 中运行并改写本会话外发的系统提示词，因此带有 Node 权限。它只读取你自己指定的那一个人设文件，只读写插件自己的状态目录，不联网，也不把提示词内容写到别处。仅在你有权管理的环境中启用。"
+		}
+	},
+	"safetyNotes": "高风险 agent.extension：扩展在 Agent sidecar 中运行并改写本会话外发的系统提示词，因此带有 Node 权限。它只读取你自己指定的那一个人设文件，只读写插件自己的状态目录，不联网，也不把提示词内容写到别处。仅在你有权管理的环境中启用。"
+}

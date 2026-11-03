@@ -1,0 +1,94 @@
+name: Bug report
+description: Something in the PI Purge panel, the /purge command, or the prompt rewriting behaves wrongly.
+title: "[bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Two things before you fill this in:
+
+        - **Redact.** The panel, `status.json` and the plugin log can contain your persona
+          text, your persona file path, and API keys. Replace prompt content with `[...]`
+          and strip anything you would not publish.
+        - The plugin id is `local.pi-purge`. If the panel does not start at all, say so in
+          "What happened" and still attach the log excerpt.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: The behaviour you got, and what you expected instead. Include the steps that led to it.
+      placeholder: |
+        1. Opened the PI Purge panel, set the mode to replace, picked my own persona file.
+        2. Started a new session.
+        3. Expected the identity line to be gone; the harness prompt was still intact.
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Panel mode
+      description: Which mode was selected when the problem appeared?
+      options:
+        - strict
+        - replace
+        - append
+    validations:
+      required: true
+  - type: input
+    id: pi-desktop-version
+    attributes:
+      label: PI-Desktop version
+      description: From the About dialog or the log header.
+      placeholder: "0.15.9"
+    validations:
+      required: true
+  - type: input
+    id: pi-version
+    attributes:
+      label: pi version
+      description: Version of the pi CLI / @earendil-works/pi-coding-agent used by the session, if you know it.
+      placeholder: "0.80.0"
+    validations:
+      required: false
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      description: Name and version, including the build for Windows.
+      placeholder: "Windows 11 24H2 (26100) / Ubuntu 24.04"
+    validations:
+      required: true
+  - type: textarea
+    id: status-json
+    attributes:
+      label: status.json contents
+      description: |
+        The whole file, redacted. It lives in the plugin state directory -
+        `%USERPROFILE%\.pi-desktop\plugins\data\local.pi-purge\status.json` on Windows,
+        `~/.pi-desktop/plugins/data/local.pi-purge/status.json` on Linux - or wherever the
+        panel's status readout says the state directory is.
+      render: json
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Plugin log excerpt
+      description: |
+        The lines around the failure, from the end of
+        `%USERPROFILE%\.pi-desktop\logs\app\plugin.log`
+        (`~/.pi-desktop/logs/app/plugin.log` on Linux). Trim the rest, keep the stack trace.
+      render: text
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      options:
+        - label: I redacted secrets, API keys and persona text from everything pasted above.
+          required: true
+        - label: I read the README and CONTRIBUTING, and ran the test suites if this is a development build.
+          required: true
