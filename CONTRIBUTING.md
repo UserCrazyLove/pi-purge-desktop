@@ -42,7 +42,7 @@ node pi-desktop-plugin/test/panel-host.test.mjs
 | `package.json` | Root manifest (`name: pi-purge`, `type: module`); `npm test` chains the four suites |
 | `extensions/pi-purge.ts` | pi CLI extension, TypeScript, loaded by the `pi` CLI |
 | `test/*.mjs` | Two CLI test suites (prompt rewriting, `PI_PURGE_SOURCE` handling) |
-| `pi-desktop-plugin/manifest.json` | Plugin manifest: id `local.pi-purge`, version `0.2.4`, `main: main.cjs` |
+| `pi-desktop-plugin/manifest.json` | Plugin manifest: id `local.pi-purge`, version `0.2.5`, `main: main.cjs` |
 | `pi-desktop-plugin/main.cjs` | Host entry point: panel backend, config, status, state-directory resolution |
 | `pi-desktop-plugin/extensions/pi-purge.extension.mjs` | Agent sidecar extension: prompt rewrite and `/purge` |
 | `pi-desktop-plugin/renderer/` | Panel UI (`index.html`, `panel.js`, `panel.css`) |

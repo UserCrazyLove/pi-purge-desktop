@@ -10,6 +10,10 @@ version is the source of truth and releases are tagged as `v<version>`.
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.2.5]
+
 ### Added
 
 - A **选择文件…** button next to the persona path field: it opens the system file
@@ -99,4 +103,5 @@ prompt-rewrite modes that this plugin's panel drives. Those
 changes are recorded upstream, not in this file; the sections above list only what the
 PI-Desktop plugin adds or changes on top.
 
+[0.2.5]: https://github.com/UserCrazyLove/pi-purge-desktop/releases/tag/v0.2.5
 [0.2.4]: https://github.com/UserCrazyLove/pi-purge-desktop/releases/tag/v0.2.4

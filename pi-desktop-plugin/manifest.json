@@ -2,7 +2,7 @@
 	"schemaVersion": 1,
 	"id": "local.pi-purge",
 	"name": "PI Purge",
-	"version": "0.2.4",
+	"version": "0.2.5",
 	"description": "把宿主系统提示词里的身份段整段清掉，只发人设 + 工作目录，或按 append/replace/strict 三种模式组合。带可视化控制面板，并保留 /purge 命令。",
 	"author": "ZiChuanLan（PI-Desktop 移植）",
 	"license": "MIT",

@@ -63,7 +63,7 @@ const ENV_SOURCE = process.env.PI_PURGE_SOURCE?.trim() || "";
 
 const MODES = ["strict", "replace", "append"];
 const PLUGIN_ID = "local.pi-purge";
-const VERSION = "0.2.4";
+const VERSION = "0.2.5";
 
 /** Host identity sentence (PI-Desktop and pi CLI share this template first line). */
 const HOST_IDENTITY = "You are an expert coding assistant operating inside pi, a coding agent harness.";

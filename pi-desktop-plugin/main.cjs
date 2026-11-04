@@ -21,7 +21,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const PLUGIN_ID = "local.pi-purge";
-const VERSION = "0.2.4";
+const VERSION = "0.2.5";
 const EMBEDDED = "embedded";
 const MODES = ["strict", "replace", "append"];
 
