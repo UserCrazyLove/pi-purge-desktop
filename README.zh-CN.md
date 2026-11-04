@@ -34,7 +34,7 @@ pi-purge-desktop/
 | --- | --- |
 | **控制面板** | 真正的窗口：总开关、模式卡片、人设来源、实时状态。不用记命令语法。 |
 | **三档组合模式** | `strict`（只发人设 + 工作目录）、`replace`（人设 + 宿主提示词，切掉身份句与内置文档段）、`append`（人设前置到原提示词）。 |
-| **人设来自文件或内置** | 选内置示例、填绝对路径，或把 `.md` 拖进面板。相对路径会被存成绝对路径。 |
+| **人设来自文件、目录或内置** | 选内置示例；点**选择文件…**在系统对话框里挑单个文件（立即生效）；点**选择目录…**列出一个文件夹里的 `.md` / `.markdown` / `.txt`，**点一下即切换**；也可以把文件或整个文件夹拖进面板，或直接填绝对路径。相对路径会被存成绝对路径。 |
 | **配置跨会话保留** | 面板把 `enabled / mode / source` 写进宿主的插件数据目录，新会话按你上次的样子启动；删掉该文件即回到 CLI 的「每会话关闭」语义。 |
 | **逐轮实测数据** | 每轮之后面板显示身份段/文档段是否被切掉、宿主提示词字符数 → 实际送出字符数、以及跑这一轮的工作目录。 |
 | **命令与面板等价** | `/purge`、`/purge on\|off\|status`、`/purge mode …`、`/purge source …`、`/purge reload`，带参数补全。两个入口写同一份配置，后写者生效。 |
@@ -60,7 +60,7 @@ pi-purge-desktop/
 
 1. **开关** —— 对所有新会话的默认开关，默认关闭。
 2. **模式** —— `strict`（默认）、`replace`、`append`，每张卡片写清楚会切掉什么。
-3. **人设** —— *内置示例*，或*本地文件*（填路径或用拖放区）。面板预览前 4000 字符，对 BOM / 非法 UTF-8 给出警告，并标记过大的文件。
+3. **人设** —— *内置示例*，或*本地文件*：点**选择文件…**挑单个文件，或点**选择目录…**列出目录里的人设、点一下即切换；把文件或文件夹拖进面板效果相同。面板预览前 4000 字符，对 BOM / 非法 UTF-8 给出警告，并标记过大的文件。
 4. **状态** —— 最近一轮：是否生效、切掉了哪几段、`宿主 → 实际送出` 的字符数、该会话的工作目录。
 5. **命令** —— `/purge` 速查表，免得两套入口在你脑子里各说各话。
 
@@ -98,7 +98,7 @@ pi-purge-desktop/
 ```text
 %USERPROFILE%\.pi-desktop\plugins\data\local.pi-purge\      (Windows)
 ~/.pi-desktop/plugins/data/local.pi-purge/                  (macOS / Linux)
-├── config.json     面板与 /purge 都会写，后写者生效
+├── config.json     面板与 /purge 都会写，后写者生效；也存面板记住的 `sourceDir`（扩展不读它）
 └── status.json     agent 扩展每轮写，面板只读
 ```
 
@@ -151,7 +151,7 @@ npm test        # 4 个套件：2 个 CLI、1 个扩展、1 个面板/宿主—�
 | CLI 扩展 | `test/pi-purge.test.mjs` | 提示词组合与会话范围 |
 | CLI 环境变量来源 | `test/pi-purge-env-source.test.mjs` | `PI_PURGE_SOURCE` 处理 |
 | 插件扩展 | `pi-desktop-plugin/test/pi-purge.extension.test.mjs` | 15 |
-| 插件宿主 + 面板 | `pi-desktop-plugin/test/panel-host.test.mjs` | 12 |
+| 插件宿主 + 面板 | `pi-desktop-plugin/test/panel-host.test.mjs` | 18 |
 
 测试把 `USERPROFILE` / `HOME` 隔离到临时根目录，并按真实安装布局把插件复制到 `<root>/installed/local.pi-purge`，所以测的是真实的解析规则，同时不碰你真实的插件数据。CI 在 Ubuntu 和 Windows 上跑同一条命令。
 

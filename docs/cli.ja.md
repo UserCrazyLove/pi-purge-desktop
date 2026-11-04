@@ -54,7 +54,7 @@ pi install npm:pi-purge
 
 既知の制限：`strict` は `AGENTS.md` / プロジェクトのコンテキスト / スキル一覧 / 他の拡張機能が注入したプロンプトも一緒に失います（CLI 版と同じ）。`config.json` はセッションごとではなくグローバルに 1 つです。パネルに表示されるのは直近で 1 ターン実行したセッションが書いた状態です。ペルソナの変更は次のメッセージで有効になります。ペルソナが読めない場合でもスイッチが黙ってオフになることはありません：`enabled` は利用者が設定した状態のまま保たれ、そのターンは書き換えられないだけで、`status.json` の `loadError` が理由を示します —— ファイルを直せば次のメッセージから自動的に有効になり、もう一度切り替える必要はありません。
 
-インストール：PluginPack で `dist/local.pi-purge-0.2.4.piplug` を生成し、PI-Desktop のプラグインページからインストールします。または `pi-desktop-plugin` ディレクトリをローカル/開発プラグインとして読み込みます。テスト：`node pi-desktop-plugin/test/pi-purge.extension.test.mjs`（15 項目）と `node pi-desktop-plugin/test/panel-host.test.mjs`（12 項目）。`npm test` は既存の CLI 2 スイートの後にこの 2 つを連結しています。詳細は `pi-desktop-plugin/README.md` を参照してください。
+インストール：PluginPack で `dist/local.pi-purge-0.2.4.piplug` を生成し、PI-Desktop のプラグインページからインストールします。または `pi-desktop-plugin` ディレクトリをローカル/開発プラグインとして読み込みます。テスト：`node pi-desktop-plugin/test/pi-purge.extension.test.mjs`（15 項目）と `node pi-desktop-plugin/test/panel-host.test.mjs`（18 項目）。`npm test` は既存の CLI 2 スイートの後にこの 2 つを連結しています。詳細は `pi-desktop-plugin/README.md` を参照してください。
 
 ## コマンド
 

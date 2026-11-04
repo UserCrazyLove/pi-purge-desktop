@@ -46,22 +46,51 @@
 					<button class="tab" type="button" data-kind="embedded">内嵌示例</button>
 					<button class="tab" type="button" data-kind="file">本地文件</button>
 				</div>
+
 				<div class="source-file" id="source-file">
-					<input
-						type="text"
-						id="source-input"
-						spellcheck="false"
-						placeholder="C:/prompts/my-instructions.md"
-					/>
 					<div class="row">
-						<button class="btn" id="source-save" type="button">使用这个文件</button>
-						<button class="btn ghost" id="source-reload" type="button">重新读取</button>
+						<button class="btn" id="source-pick-button" type="button">选择文件…</button>
+						<button class="btn" id="dir-pick-button" type="button">选择目录…</button>
 					</div>
-					<p class="hint" id="drop-hint">
-						也可以把 <code>.md</code> 文件直接拖到本窗口，路径会自动填进来。
+					<input type="file" id="source-pick" tabindex="-1" aria-hidden="true" hidden />
+					<input
+						type="file"
+						id="dir-pick"
+						webkitdirectory
+						directory
+						multiple
+						tabindex="-1"
+						aria-hidden="true"
+						hidden
+					/>
+
+					<div class="path-row">
+						<input
+							type="text"
+							id="source-input"
+							spellcheck="false"
+							placeholder="也可以直接填绝对路径，回车应用"
+						/>
+						<button class="chip" id="source-save" type="button">应用</button>
+					</div>
+
+					<div class="dir-block" id="dir-block" hidden>
+						<div class="dir-head">
+							<span class="dir-path" id="dir-path">还没选目录</span>
+							<button class="chip" id="dir-refresh" type="button">刷新</button>
+						</div>
+						<ul class="file-list" id="file-list" hidden></ul>
+					</div>
+
+					<p class="hint" id="dir-hint">
+						选一个文件，或者选一个目录后在列表里点选；也能把文件、整个文件夹拖进窗口。
 					</p>
 				</div>
-				<div class="preview-meta" id="preview-meta"></div>
+
+				<div class="preview-head">
+					<span class="preview-meta" id="preview-meta"></span>
+					<button class="chip" id="source-reload" type="button">重新读取</button>
+				</div>
 				<pre class="preview" id="preview"></pre>
 			</section>
 

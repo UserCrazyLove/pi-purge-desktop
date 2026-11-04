@@ -13,7 +13,7 @@ import test from "node:test";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const PLUGIN_SOURCE = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -156,7 +156,12 @@ test("purge.setConfig writes the shared config and reports the persona it names"
 			{ enabled: stored.enabled, mode: stored.mode, source: stored.source, updatedBy: stored.updatedBy },
 			{ enabled: true, mode: "replace", source: personaFile, updatedBy: "panel" },
 		);
-		assert.deepEqual(Object.keys(stored).sort(), ["enabled", "mode", "source", "updatedAt", "updatedBy"], "no derived fields leak into the file");
+		assert.deepEqual(
+			Object.keys(stored).sort(),
+			["enabled", "mode", "source", "sourceDir", "updatedAt", "updatedBy"],
+			"only real settings reach the file: no derived fields, and no half-written config"
+		);
+		assert.equal(stored.sourceDir, "", "a persona-file patch leaves the remembered directory empty");
 
 		// Only the fields the panel actually sent are merged.
 		const back = await it.entry.onPanelInvoke("purge.setConfig", { source: "embedded" });
@@ -180,6 +185,112 @@ test("purge.setConfig writes the shared config and reports the persona it names"
 	}
 });
 
+
+test("purge.listDir lists the persona files of one directory and marks the current one", async () => {
+	const it = await boot();
+	try {
+		const dir = join(it.dir, "personas");
+		mkdirSync(join(dir, "sub"), { recursive: true });
+		writeFileSync(join(dir, "b.md"), "# b\n", "utf8");
+		writeFileSync(join(dir, "a.md"), "# a\n", "utf8");
+		writeFileSync(join(dir, "c.markdown"), "# c\n", "utf8");
+		writeFileSync(join(dir, "d.txt"), "d\n", "utf8");
+		writeFileSync(join(dir, "notes.json"), "{}\n", "utf8");
+		writeFileSync(join(dir, "sub", "nested.md"), "# nested\n", "utf8");
+
+		await it.entry.onPanelInvoke("purge.setConfig", { source: join(dir, "b.md") });
+		const listed = await it.entry.onPanelInvoke("purge.listDir", { dir });
+
+		assert.equal(listed.ok, true);
+		assert.equal(listed.error, "");
+		assert.equal(listed.dir, dir, "the host answers with its own normalised absolute directory");
+		assert.deepEqual(
+			listed.entries.map((entry) => entry.name),
+			["a.md", "b.md", "c.markdown", "d.txt"],
+			"persona extensions only, sorted by name, and no recursion into subdirectories"
+		);
+		assert.equal(listed.entries.every((entry) => isAbsolute(entry.path)), true, "entries carry absolute paths");
+		assert.equal(listed.entries.every((entry) => entry.bytes > 0 && entry.mtime > 0), true, "size and mtime come from stat");
+		assert.deepEqual(
+			listed.entries.filter((entry) => entry.current).map((entry) => entry.name),
+			["b.md"],
+			"the active persona is marked so the panel can highlight it"
+		);
+
+		const again = await it.entry.onPanelInvoke("purge.listDir", {});
+		assert.deepEqual(
+			again.entries.map((entry) => entry.name),
+			[],
+			"without a directory and without a remembered one, nothing is listed"
+		);
+	} finally {
+		it.restore();
+		cleanup(it.dir);
+	}
+});
+
+test("purge.listDir reports a missing directory or a file instead of throwing", async () => {
+	const it = await boot();
+	try {
+		const file = join(it.dir, "not-a-dir.md");
+		writeFileSync(file, "# nope\n", "utf8");
+
+		const missing = await it.entry.onPanelInvoke("purge.listDir", { dir: join(it.dir, "absent") });
+		assert.equal(missing.ok, true);
+		assert.equal(missing.error, "目录不存在");
+		assert.deepEqual(missing.entries, []);
+
+		const notDir = await it.entry.onPanelInvoke("purge.listDir", { dir: file });
+		assert.equal(notDir.error, "这不是一个目录");
+		assert.deepEqual(notDir.entries, []);
+	} finally {
+		it.restore();
+		cleanup(it.dir);
+	}
+});
+
+test("the browsed directory is remembered in the shared config", async () => {
+	const it = await boot();
+	try {
+		const dir = join(it.dir, "personas");
+		mkdirSync(dir, { recursive: true });
+		writeFileSync(join(dir, "one.md"), "# one\n", "utf8");
+
+		const saved = await it.entry.onPanelInvoke("purge.setConfig", { sourceDir: dir });
+		assert.equal(saved.config.sourceDir, dir, "setConfig normalises and returns it");
+		assert.equal(readConfig(it.dir).sourceDir, dir, "it is on disk, not only in memory");
+		assert.equal(readConfig(it.dir).source, "embedded", "remembering a directory does not switch the persona");
+
+		const state = await it.entry.onPanelInvoke("purge.state", {});
+		assert.equal(state.config.sourceDir, dir, "the panel gets it back with the state");
+
+		const listed = await it.entry.onPanelInvoke("purge.listDir", {});
+		assert.deepEqual(listed.entries.map((entry) => entry.name), ["one.md"], "a bare listDir re-lists the remembered directory");
+
+		const cleared = await it.entry.onPanelInvoke("purge.setConfig", { sourceDir: "" });
+		assert.equal(cleared.config.sourceDir, "");
+	} finally {
+		it.restore();
+		cleanup(it.dir);
+	}
+});
+
+test("a persona directory stops at 200 entries and says so", async () => {
+	const it = await boot();
+	try {
+		const dir = join(it.dir, "many");
+		mkdirSync(dir, { recursive: true });
+		for (let index = 0; index < 205; index += 1) {
+			writeFileSync(join(dir, `p${String(index).padStart(3, "0")}.md`), "# p\n", "utf8");
+		}
+		const listed = await it.entry.onPanelInvoke("purge.listDir", { dir });
+		assert.equal(listed.entries.length, 200);
+		assert.equal(listed.truncated, true, "the panel has to be able to say the list was cut");
+	} finally {
+		it.restore();
+		cleanup(it.dir);
+	}
+});
 test("a panel-typed relative path is stored as an absolute one", async () => {
 	const it = await boot();
 	try {
@@ -213,6 +324,25 @@ test("a corrupt config.json is reported and never silently overwritten", async (
 		it.restore();
 		cleanup(it.dir);
 	}
+});
+
+test("the panel lists a persona directory and switches on click", async () => {
+	const html = readFileSync(join(PLUGIN_SOURCE, "renderer", "index.html"), "utf8");
+	const script = readFileSync(join(PLUGIN_SOURCE, "renderer", "panel.js"), "utf8");
+	const css = readFileSync(join(PLUGIN_SOURCE, "renderer", "panel.css"), "utf8");
+
+	const input = /<input[^>]*id="dir-pick"[^>]*>/.exec(html);
+	assert.ok(input, "index.html ships a directory input");
+	assert.match(input[0], /webkitdirectory/, "the input opens a directory picker, not a file picker");
+	assert.match(html, /<button[^>]*id="dir-pick-button"/, "a visible button opens it");
+	assert.match(html, /<ul[^>]*id="file-list"/, "the listing has its own container");
+
+	assert.match(script, /invoke\("purge\.listDir"/, "the list comes from the host, which is the only side that can read a directory");
+	assert.match(script, /nodes\.dirPickButton\.addEventListener\("click", \(\) => nodes\.dirPick\.click\(\)\)/);
+	assert.match(script, /async function pickedDirectory/, "the chosen folder is recovered from the picked file");
+	assert.match(script, /apply\(\{ source: entry\.path, sourceDir: dirState\.dir \}/, "one click switches the persona and remembers the directory");
+	assert.match(script, /dirPrimed/, "the remembered directory is listed once, not on every poll");
+	assert.match(css, /\.file-item\[data-current="true"\]/, "the active persona is visibly marked");
 });
 
 test("an unusable data directory falls back to the plugin's own state/ on both sides", async () => {
@@ -283,6 +413,28 @@ test("every element the panel looks up exists in the panel document", async () =
 	assert.match(html, /pi-plugin-chrome/, "the panel tells the host it owns its titlebar spacing");
 	assert.match(script, /generation/, "the panel drops poll answers that a write has outdated");
 	assert.match(script, /sourceDirty/, "the panel does not overwrite what the user is typing");
+});
+
+test("the persona source can be picked from disk, not only typed in", async () => {
+	const html = readFileSync(join(PLUGIN_SOURCE, "renderer", "index.html"), "utf8");
+	const script = readFileSync(join(PLUGIN_SOURCE, "renderer", "panel.js"), "utf8");
+	const css = readFileSync(join(PLUGIN_SOURCE, "renderer", "panel.css"), "utf8");
+
+	const input = /<input[^>]*type="file"[^>]*id="source-pick"[^>]*>/.exec(html);
+	assert.ok(input, "index.html ships a file input for the OS picker");
+	assert.match(input[0], /\bhidden\b/, "the file input itself never shows up as a control");
+	assert.match(html, /<button[^>]*id="source-pick-button"/, "a visible button opens it");
+
+	assert.match(
+		script,
+		/nodes\.sourcePickButton\.addEventListener\("click",[\s\S]*?nodes\.sourcePick\.click\(\)/,
+		"clicking the button opens the file dialog"
+	);
+	assert.match(script, /nodes\.sourcePick\.addEventListener\("change"/, "a chosen file is handled");
+	assert.match(script, /await filePathOf\(file\)/, "the chosen File becomes an absolute path");
+	assert.match(script, /nodes\.sourcePick\.value = ""/, "the same file can be picked twice in a row");
+	assert.match(script, /apply\(\{ source: path2 \}/, "picking a file switches the persona immediately");
+	assert.match(css, /#source-pick[^{]*\{[^}]*display:\s*none/, "the input stays invisible");
 });
 
 test("a small persona is re-read even when its size and timestamp did not change", async () => {

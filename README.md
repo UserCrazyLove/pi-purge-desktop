@@ -34,7 +34,7 @@ pi-purge-desktop/
 | --- | --- |
 | **Control panel** | A real window: master switch, mode cards, persona source, live status. No command syntax to memorise. |
 | **Three composition modes** | `strict` (persona + working directory only), `replace` (persona + harness prompt minus identity line and docs), `append` (persona prepended to the stock prompt). |
-| **Persona from a file or the bundle** | Pick a shipped example, type an absolute path, or drag a `.md` onto the panel. Relative paths are stored as absolute ones. |
+| **Persona from a file, a folder, or the bundle** | Pick a shipped example; choose a file with **选择文件…** (system dialog, applied immediately); **browse a folder** with **选择目录…** and switch between the `.md` / `.markdown` / `.txt` files in it with one click; drag a file or a folder onto the panel; or type an absolute path. Relative paths are stored as absolute ones. |
 | **Persisted config** | The panel writes `enabled / mode / source` to the host's per-plugin data directory, so a new session starts the way you left it. Delete the file to return to CLI semantics. |
 | **Live per-turn telemetry** | After each turn the panel shows whether the identity and documentation sections were cut, the host prompt's character count and the characters actually sent, and the working directory of the session that ran. |
 | **Command parity** | `/purge`, `/purge on\|off\|status`, `/purge mode …`, `/purge source …`, `/purge reload`, with argument completions. Both surfaces write the same config; last writer wins. |
@@ -60,7 +60,7 @@ Adapted to, and tested on, **PI-Desktop v0.21.0** — see the note above. Tests 
 
 1. **Switch** — off / on for every new session. Default off.
 2. **Mode** — `strict` (default), `replace`, or `append`. Each card states exactly what is cut.
-3. **Persona** — *bundled example*, or *local file* (typed path or drop zone). The panel previews the first 4000 characters, warns about a BOM or invalid UTF-8, and flags oversized files.
+3. **Persona** — *bundled example*, or *local file*: press **选择文件…** to pick one file, or **选择目录…** to list a folder's personas and switch between them with a click; dropping a file or a folder onto the panel does the same. The panel previews the first 4000 characters, warns about a BOM or invalid UTF-8, and flags oversized files.
 4. **Status** — for the last turn: applied / not applied, which sections were cut, `host → sent` character counts, and the session's working directory.
 5. **Commands** — the `/purge` cheat sheet, so the two surfaces do not drift apart in your head.
 
@@ -98,7 +98,7 @@ Two files, and only two, in the host's per-plugin data directory:
 ```text
 %USERPROFILE%\.pi-desktop\plugins\data\local.pi-purge\      (Windows)
 ~/.pi-desktop/plugins/data/local.pi-purge/                  (macOS / Linux)
-├── config.json     written by the panel and by /purge — last writer wins
+├── config.json     written by the panel and by /purge — last writer wins; also carries the panel's `sourceDir`
 └── status.json     written by the agent extension after each turn — read-only for the panel
 ```
 
@@ -151,7 +151,7 @@ npm test        # 4 suites: 2 CLI, 1 extension, 1 panel/host — no dependencies
 | CLI extension | `test/pi-purge.test.mjs` | prompt composition and session scope |
 | CLI env source | `test/pi-purge-env-source.test.mjs` | `PI_PURGE_SOURCE` handling |
 | Plugin extension | `pi-desktop-plugin/test/pi-purge.extension.test.mjs` | 15 |
-| Plugin host + panel | `pi-desktop-plugin/test/panel-host.test.mjs` | 12 |
+| Plugin host + panel | `pi-desktop-plugin/test/panel-host.test.mjs` | 18 |
 
 Tests isolate `USERPROFILE` / `HOME` into a temporary root and install a copy of the plugin at `<root>/installed/local.pi-purge`, so the real resolution rules are exercised without touching your real plugin data. CI runs the same command on Ubuntu and Windows.
 

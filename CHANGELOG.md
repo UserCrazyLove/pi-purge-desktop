@@ -10,7 +10,35 @@ version is the source of truth and releases are tagged as `v<version>`.
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- A **选择文件…** button next to the persona path field: it opens the system file
+  dialog, resolves the chosen file to an absolute path through the panel preload and
+  switches the persona immediately — no more typing paths by hand. Drag-and-drop and
+  manual entry still work, and the same file can be picked twice in a row.
+- **选择目录…** plus a file list under the persona path: pick a folder once and switch
+  between the `.md` / `.markdown` / `.txt` files in it with a single click. The active
+  persona is highlighted and marked 当前; the folder is remembered in `config.json`
+  (`sourceDir`, a panel-only field the extension ignores) and listed again next time.
+  Dropping a folder onto the panel does the same, and the host lists at most 200 entries
+  per folder and says when it stopped.
+- `purge.listDir` host channel: lists one directory level, refuses a file or a missing
+  folder with a message instead of throwing, and marks the current persona. The panel keeps
+  that list out of the 1.5 s poll, so the list survives every status refresh.
+- Five more panel/host tests (18 now): the file picker wiring, the directory picker wiring,
+  listing/sorting/filtering, a missing folder or a file instead of a folder, the remembered
+  `sourceDir`, and the 200-entry cap.
+- A partial write now persists the whole effective config instead of only the patched keys,
+  so `config.json` never ends up as a fragment that reads like a broken file.
+
+### Changed
+
+- The 人设来源 card was laid out again: the two pickers share one row, the path field is a
+  single line with an inline `应用` chip, the directory path and its `刷新` chip sit on the
+  list header, and there is one hint line instead of two. Selecting 内嵌示例 now hides the
+  whole file block instead of leaving an empty path field and an empty list on screen, and
+  the preview header names the file (basename, full path in the tooltip) with its real size
+  in B/KB instead of rounding a small persona to `0 KB`.
 
 ## [0.2.4]
 
@@ -26,7 +54,8 @@ a fork of [ZiChuanLan/pi-purge](https://github.com/ZiChuanLan/pi-purge) (MIT).
   identity line and bundled docs, `append` prepends the persona) and a live status readout
   showing the resolved mode, state directory, prompt sizes and last error.
 - Persona source picker: the bundled persona, or your own markdown file, given as an absolute
-  path in a text field and applied with the `使用这个文件` button, or dropped onto the panel.
+  path in a text field and applied with the `应用` chip, picked in the system file
+  dialog with `选择文件…`, or dropped onto the panel.
 - Configuration persisted in the host's per-plugin data directory
   (`<pi-desktop>/plugins/data/local.pi-purge/config.json`), so `enabled`, `mode` and
   `source` survive a restart. The extension re-reads it on `session_start` and before each

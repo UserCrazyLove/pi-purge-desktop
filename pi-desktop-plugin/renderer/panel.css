@@ -280,24 +280,21 @@ input:focus-visible {
 	color: var(--fg);
 }
 
+/* --- persona source -------------------------------------------------------- */
 .source-file {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	gap: 10px;
 }
 
 .source-file[hidden] {
 	display: none;
 }
 
-#source-input {
-	width: 100%;
-	border: 1px solid var(--border);
-	border-radius: 9px;
-	padding: 8px 10px;
-	background: var(--bg);
-	color: var(--fg);
-	font: 12px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+/* Both pickers stay invisible: the visible controls are the two buttons above them. */
+#source-pick,
+#dir-pick {
+	display: none;
 }
 
 .row {
@@ -306,10 +303,145 @@ input:focus-visible {
 	flex-wrap: wrap;
 }
 
+/* A secondary action, sized to sit beside a field or a path instead of under it. */
+.chip {
+	flex: none;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	padding: 4px 10px;
+	background: transparent;
+	color: var(--muted);
+	font-family: inherit;
+	font-size: 11.5px;
+	cursor: pointer;
+}
+
+.chip:hover {
+	background: var(--surface-2);
+	color: var(--fg);
+}
+
+.path-row {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+#source-input {
+	flex: 1 1 auto;
+	min-width: 0;
+	border: 1px solid var(--border);
+	border-radius: 9px;
+	padding: 8px 10px;
+	background: var(--bg);
+	color: var(--fg);
+	font: 12px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+/* --- persona directory ----------------------------------------------------- */
+.dir-block {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.dir-block[hidden] {
+	display: none;
+}
+
+.dir-head {
+	display: flex;
+	gap: 8px;
+	align-items: baseline;
+	justify-content: space-between;
+}
+
+.dir-path {
+	min-width: 0;
+	overflow: hidden;
+	color: var(--muted);
+	font: 11.5px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.file-list {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	max-height: 216px;
+	margin: 0;
+	padding: 2px;
+	overflow-y: auto;
+	border: 1px solid var(--border);
+	border-radius: 9px;
+	background: var(--bg);
+	list-style: none;
+}
+
+.file-list[hidden] {
+	display: none;
+}
+
+.file-item {
+	display: flex;
+	gap: 10px;
+	align-items: baseline;
+	justify-content: space-between;
+	width: 100%;
+	padding: 6px 8px;
+	border: 0;
+	border-radius: 7px;
+	background: transparent;
+	color: var(--fg);
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.file-item:hover {
+	background: var(--surface-2);
+}
+
+.file-item[data-current="true"] {
+	background: color-mix(in oklab, var(--accent) 16%, transparent);
+	box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.file-name {
+	overflow: hidden;
+	font-size: 12.5px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.file-meta {
+	flex: none;
+	color: var(--faint);
+	font-size: 11px;
+}
+
+#dir-hint[data-tone="bad"] {
+	color: var(--bad);
+}
+
+/* --- preview --------------------------------------------------------------- */
+.preview-head {
+	display: flex;
+	gap: 8px;
+	align-items: baseline;
+	justify-content: space-between;
+	margin-top: 2px;
+}
+
 .preview-meta {
+	min-width: 0;
+	overflow: hidden;
 	color: var(--muted);
 	font-size: 11.5px;
 	font-variant-numeric: tabular-nums;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .preview-meta[data-tone="bad"] {

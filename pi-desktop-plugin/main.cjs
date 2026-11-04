@@ -35,6 +35,10 @@ const COMMAND_TOGGLE = "pi-purge.toggle";
 const PREVIEW_CHARS = 4000;
 const MAX_PERSONA_BYTES = 512 * 1024;
 
+/** A persona directory lists these extensions, and stops after this many entries. */
+const PERSONA_EXTS = [".md", ".markdown", ".txt"];
+const MAX_DIR_ENTRIES = 200;
+
 const MODES_INFO = [
 	{
 		id: "strict",
@@ -203,6 +207,9 @@ function readConfig() {
 		enabled: typeof stored.enabled === "boolean" ? stored.enabled : DEFAULTS.enabled,
 		mode: MODES.includes(stored.mode) ? stored.mode : DEFAULTS.mode,
 		source: typeof stored.source === "string" && stored.source.trim() ? stored.source.trim() : DEFAULTS.source,
+		// The last directory browsed in the panel, remembered so the list is one click away
+		// next time. Purely a panel convenience: the extension never reads it.
+		sourceDir: typeof stored.sourceDir === "string" ? stored.sourceDir.trim() : "",
 		updatedBy: typeof stored.updatedBy === "string" ? stored.updatedBy : "",
 		updatedAt: typeof stored.updatedAt === "string" ? stored.updatedAt : "",
 	};
@@ -217,8 +224,11 @@ function updateConfig(patch, writer) {
 		error.code = "CONFIG_CORRUPT";
 		throw error;
 	}
-	const next = { ...current.stored };
-	for (const key of ["enabled", "mode", "source"]) {
+	// Start from what the file means, not from what it happens to contain: a partial patch on
+	// a fresh install would otherwise leave `config.json` without `enabled / mode / source`,
+	// which reads like a broken file to anyone opening it by hand.
+	const next = { ...current.stored, ...readConfig().config };
+	for (const key of ["enabled", "mode", "source", "sourceDir"]) {
 		if (patch[key] !== undefined) next[key] = patch[key];
 	}
 	next.updatedBy = writer;
@@ -243,6 +253,65 @@ function normalizeSource(value) {
 	if (!trimmed) return EMBEDDED;
 	if (trimmed.toLowerCase() === EMBEDDED) return EMBEDDED;
 	return path.resolve(trimmed);
+}
+
+/** Normalise the persona directory the same way, so the panel and the host agree on it. */
+function normalizeDir(value) {
+	const trimmed = String(value ?? "").trim();
+	if (!trimmed || trimmed.toLowerCase() === EMBEDDED) return "";
+	return path.resolve(trimmed);
+}
+
+/**
+ * List the persona files of one directory. Only the top level: a persona directory is a
+ * flat folder of variants, and recursing would turn a deep tree into a wall of names.
+ * Every failure comes back as `error` rather than a throw, because the panel shows this
+ * list next to the switch it is meant to drive.
+ */
+function listPersonas(dir, currentSource) {
+	const wanted = normalizeDir(dir);
+	if (!wanted) return { dir: "", entries: [], truncated: false, error: "" };
+	const current = normalizeSource(currentSource);
+	const same = (a, b) =>
+		process.platform === "win32" ? a.toLowerCase() === b.toLowerCase() : a === b;
+
+	let dirents;
+	try {
+		const info = fs.statSync(wanted);
+		if (!info.isDirectory()) return { dir: wanted, entries: [], truncated: false, error: "这不是一个目录" };
+		dirents = fs.readdirSync(wanted, { withFileTypes: true });
+	} catch (cause) {
+		const message = cause && cause.code === "ENOENT" ? "目录不存在" : cause instanceof Error ? cause.message : String(cause);
+		return { dir: wanted, entries: [], truncated: false, error: message };
+	}
+
+	const entries = [];
+	let truncated = false;
+	for (const dirent of dirents) {
+		// A symlinked file reports as a symlink here; `stat` below decides what it really is.
+		if (dirent.isDirectory()) continue;
+		const ext = path.extname(dirent.name).toLowerCase();
+		if (!PERSONA_EXTS.includes(ext)) continue;
+		if (entries.length >= MAX_DIR_ENTRIES) {
+			truncated = true;
+			break;
+		}
+		const full = path.join(wanted, dirent.name);
+		let bytes = 0;
+		let mtime = 0;
+		try {
+			const info = fs.statSync(full);
+			if (info.isDirectory()) continue;
+			bytes = info.size;
+			mtime = info.mtimeMs;
+		} catch {
+			continue; // vanished between readdir and stat
+		}
+		entries.push({ name: dirent.name, path: full, bytes, mtime, current: same(full, current) });
+	}
+
+	entries.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
+	return { dir: wanted, entries, truncated, error: "" };
 }
 
 /* --- persona description ---------------------------------------------------- */
@@ -430,8 +499,14 @@ async function onPanelInvoke(channel, payload) {
 			if (typeof payload?.enabled === "boolean") patch.enabled = payload.enabled;
 			if (typeof payload?.mode === "string" && MODES.includes(payload.mode)) patch.mode = payload.mode;
 			if (typeof payload?.source === "string") patch.source = normalizeSource(payload.source);
+			if (typeof payload?.sourceDir === "string") patch.sourceDir = normalizeDir(payload.sourceDir);
 			const config = updateConfig(patch, "panel");
 			return { ok: true, config, persona: describeSource(config.source) };
+		}
+		case "purge.listDir": {
+			// `dir` is what the panel just picked; without it, re-list the remembered one.
+			const dir = typeof payload?.dir === "string" ? payload.dir : readConfig().config.sourceDir;
+			return { ok: true, ...listPersonas(dir, readConfig().config.source) };
 		}
 		case "purge.reloadPersona":
 			personaCache = { key: "", value: null };

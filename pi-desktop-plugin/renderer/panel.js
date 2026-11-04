@@ -25,10 +25,19 @@
 		tabs: el("source-tabs"),
 		sourceFile: el("source-file"),
 		sourceInput: el("source-input"),
+		sourcePick: el("source-pick"),
+		sourcePickButton: el("source-pick-button"),
 		sourceSave: el("source-save"),
 		sourceReload: el("source-reload"),
 		previewMeta: el("preview-meta"),
 		preview: el("preview"),
+		dirBlock: el("dir-block"),
+		dirPick: el("dir-pick"),
+		dirPickButton: el("dir-pick-button"),
+		dirRefresh: el("dir-refresh"),
+		dirPath: el("dir-path"),
+		fileList: el("file-list"),
+		dirHint: el("dir-hint"),
 		facts: el("facts"),
 		footNote: el("foot-note"),
 	};
@@ -44,6 +53,13 @@
 	let sourceDirty = false;
 	/** Where the switch is heading between a click and its answer, so a double click is honest. */
 	let pendingEnabled = null;
+	/**
+	 * The persona directory listing. Kept beside `latest` on purpose: the panel polls the
+	 * switch every 1.5 s, and the file list must not be refetched (or lost) on every poll.
+	 */
+	let dirState = { dir: "", entries: [], error: "", truncated: false };
+	/** True once the remembered directory has been listed for this window. */
+	let dirPrimed = false;
 
 	async function invoke(channel, payload) {
 		if (!bridge || typeof bridge.invoke !== "function") {
@@ -218,16 +234,27 @@
 		if (!sourceDirty && persona.kind === "file" && document.activeElement !== nodes.sourceInput) {
 			nodes.sourceInput.value = persona.path;
 		}
+		// The whole file block only makes sense for a local persona: with the bundled example
+		// selected it is noise, so it disappears instead of sitting there disabled.
+		nodes.sourceFile.hidden = persona.kind === "embedded" && !sourceDirty;
 
 		if (persona.error) {
 			nodes.previewMeta.dataset.tone = "bad";
 			nodes.previewMeta.textContent = `读不到人设：${persona.error}`;
+			nodes.previewMeta.title = persona.label ?? "";
 			nodes.preview.textContent = "";
 		} else {
 			nodes.previewMeta.dataset.tone = "";
-			const size = persona.bytes ? ` · ${Math.round(persona.bytes / 1024)} KB` : "";
+			// The path is already in the field above; here the file name is what identifies it.
+			// The bundled persona keeps its own label, which is not a path.
+			const label = String(persona.label ?? "");
+			const parts = label.split(/[\\/]/);
+			const shortLabel =
+				persona.kind === "embedded" || parts.length === 1 ? label : parts[parts.length - 1];
 			const chars = persona.charsTruncated ? `≥ ${persona.chars}` : `${persona.chars}`;
-			nodes.previewMeta.textContent = `${persona.label} · ${chars} 字符 · ${persona.lines} 行${size}${persona.previewTruncated ? "（预览前 4000 字符）" : ""}`;
+			const size = persona.bytes ? ` · ${formatBytes(persona.bytes)}` : "";
+			nodes.previewMeta.textContent = `${shortLabel} · ${chars} 字符 · ${persona.lines} 行${size}${persona.previewTruncated ? "（预览前 4000 字符）" : ""}`;
+			nodes.previewMeta.title = label;
 			nodes.preview.textContent = persona.preview || "(空)";
 		}
 
@@ -235,6 +262,14 @@
 		nodes.footNote.textContent = plugin.stateDir
 			? `状态目录 ${plugin.stateDir}`
 			: `状态目录不可用（候选都不可写）：${(plugin.configCandidates ?? []).join(" / ")}`;
+
+		// Keep the file list's "current" mark in step with the persona the panel just showed.
+		renderDir();
+		if (!dirPrimed && config.sourceDir) {
+			// First paint of this window: list the directory the user browsed last time.
+			dirPrimed = true;
+			chooseDir(config.sourceDir);
+		}
 	}
 
 	function showFailure(message) {
@@ -288,8 +323,11 @@
 		}
 	}
 
-	/** The host preload returns a string today; tolerate a promise in case that changes. */
-	async function droppedPath(file) {
+	/**
+	 * Absolute path of a real `File` — from a drop or from the file picker. The host preload
+	 * returns a string today; tolerate a promise in case that changes.
+	 */
+	async function filePathOf(file) {
 		if (!bridge || typeof bridge.getDroppedFilePath !== "function") return "";
 		try {
 			const raw = bridge.getDroppedFilePath(file);
@@ -297,6 +335,115 @@
 			return typeof value === "string" ? value : "";
 		} catch {
 			return "";
+		}
+	}
+
+	function formatBytes(bytes) {
+		const value = Number(bytes) || 0;
+		if (value < 1024) return `${value} B`;
+		if (value < 1024 * 10) return `${(value / 1024).toFixed(1)} KB`;
+		return `${Math.round(value / 1024)} KB`;
+	}
+
+	/**
+	 * The directory a `webkitdirectory` File came from. The preload hands out absolute paths
+	 * only, so Chromium's relative path is what says how many segments to strip.
+	 */
+	async function pickedDirectory(file) {
+		const absolute = await filePathOf(file);
+		if (!absolute) return "";
+		const relative = String(file.webkitRelativePath || file.name || "");
+		const depth = Math.max(1, relative.split("/").length - 1);
+		let dir = absolute;
+		for (let step = 0; step < depth; step += 1) {
+			const cut = Math.max(dir.lastIndexOf("\\"), dir.lastIndexOf("/"));
+			if (cut <= 0) break;
+			dir = dir.slice(0, cut);
+		}
+		return dir;
+	}
+
+	/** Ask the host to list a directory. `null` when the path is not a readable directory. */
+	async function listDir(dir) {
+		try {
+			const result = await invoke("purge.listDir", { dir });
+			if (!result || result.error) return null;
+			return result;
+		} catch {
+			return null;
+		}
+	}
+
+	/** Remember the directory and list it. The host owns the path, so it normalises it. */
+	async function chooseDir(dir) {
+		const listing = await listDir(dir);
+		dirState = {
+			dir: String(listing?.dir || dir || ""),
+			entries: Array.isArray(listing?.entries) ? listing.entries : [],
+			error: listing ? "" : "读不到这个目录（不存在、没有权限，或者它其实是个文件）",
+			truncated: Boolean(listing?.truncated),
+		};
+		renderDir();
+		const remembered = String(latest?.config?.sourceDir ?? "");
+		if (listing && dirState.dir && dirState.dir !== remembered) {
+			// Remembered so the list is one click away next time; no toast, this is not a
+			// persona switch yet.
+			await apply({ sourceDir: dirState.dir }, "");
+		}
+	}
+
+	function renderDir() {
+		const dir = dirState.dir || String(latest?.config?.sourceDir ?? "");
+		// A long path ellipsized at the end hides the one part that matters — the folder
+		// name. Keep the tail and leave the full path in the tooltip.
+		const parts = dir.split(/[\\/]/).filter(Boolean);
+		const short = dir && dir.length > 48 && parts.length > 2 ? `…\\${parts.slice(-2).join("\\")}` : dir;
+		nodes.dirPath.textContent = short || "还没选目录";
+		nodes.dirPath.title = dir;
+
+		const currentPath = String(latest?.persona?.path ?? "");
+		const same = (a, b) => Boolean(a) && Boolean(b) && a.toLowerCase() === b.toLowerCase();
+		const items = dirState.entries.map((entry) => {
+			const button = document.createElement("button");
+			button.type = "button";
+			button.className = "file-item";
+			const isCurrent = Boolean(entry.current) || same(entry.path, currentPath);
+			if (isCurrent) button.dataset.current = "true";
+			const name = document.createElement("span");
+			name.className = "file-name";
+			name.textContent = entry.name;
+			name.title = entry.path;
+			const meta = document.createElement("span");
+			meta.className = "file-meta";
+			meta.textContent = `${formatBytes(entry.bytes)}${isCurrent ? " · 当前" : ""}`;
+			button.append(name, meta);
+			button.addEventListener("click", () => {
+				nodes.sourceInput.value = entry.path;
+				sourceDirty = false;
+				apply({ source: entry.path, sourceDir: dirState.dir }, `人设已切换为 ${entry.name}`);
+			});
+			const li = document.createElement("li");
+			li.append(button);
+			return li;
+		});
+
+		nodes.fileList.replaceChildren(...items);
+		nodes.fileList.hidden = items.length === 0;
+		// The directory block (path + refresh + list) only exists once a directory is known.
+		nodes.dirBlock.hidden = !dir;
+		nodes.dirHint.dataset.tone = "";
+		if (dirState.error) {
+			nodes.dirHint.dataset.tone = "bad";
+			nodes.dirHint.textContent = `目录读取失败：${dirState.error}`;
+		} else if (!dir) {
+			nodes.dirHint.textContent =
+				"选一个文件，或者选一个目录后在列表里点选；也能把文件、整个文件夹拖进窗口。";
+		} else if (!items.length) {
+			nodes.dirHint.textContent = "这个目录里没有 .md / .markdown / .txt 文件。";
+		} else if (dirState.truncated) {
+			nodes.dirHint.textContent = `文件太多，只列出前 ${items.length} 个；点一下即刻切换。`;
+		} else {
+			nodes.dirHint.textContent = `${items.length} 个文件 · 点一下即刻切换（下一条消息生效）`;
 		}
 	}
 
@@ -338,7 +485,10 @@
 				apply({ source: "embedded" }, "已切回内嵌示例人设");
 				return;
 			}
+			// Switching to the local-file tab reveals the block the previous render hid, so the
+			// focus below has something to land in.
 			sourceDirty = true;
+			nodes.sourceFile.hidden = false;
 			nodes.sourceInput.focus();
 			nodes.sourceInput.select();
 		});
@@ -350,11 +500,33 @@
 		nodes.sourceSave.addEventListener("click", () => {
 			const value = nodes.sourceInput.value.trim();
 			if (!value) {
-				toast("先填一个人设文件的绝对路径，或把文件拖进窗口", "error");
+				toast("先选一个人设文件，或者把它的绝对路径填进来", "error");
 				return;
 			}
 			sourceDirty = false;
 			apply({ source: value }, `人设已切换为 ${value}`);
+		});
+
+		nodes.sourcePickButton.addEventListener("click", () => {
+			// A hidden <input type="file"> is the only web API that opens the OS file picker;
+			// the preload turns the chosen File back into an absolute path for us.
+			nodes.sourcePick.click();
+		});
+
+		nodes.sourcePick.addEventListener("change", async () => {
+			const file = nodes.sourcePick.files?.[0];
+			// Clearing the value lets the same file be picked twice in a row: without it the
+			// picker stays silent when the selection did not change.
+			nodes.sourcePick.value = "";
+			if (!file) return;
+			const path2 = await filePathOf(file);
+			if (!path2) {
+				await toast("拿不到这个文件的本地路径，手动粘贴绝对路径试试", "error");
+				return;
+			}
+			nodes.sourceInput.value = path2;
+			sourceDirty = false;
+			await apply({ source: path2 }, `人设已切换为 ${path2}`);
 		});
 
 		nodes.sourceInput.addEventListener("keydown", (event) => {
@@ -372,6 +544,24 @@
 			}
 		});
 
+		nodes.dirPickButton.addEventListener("click", () => nodes.dirPick.click());
+
+		nodes.dirPick.addEventListener("change", async () => {
+			const file = nodes.dirPick.files?.[0];
+			nodes.dirPick.value = "";
+			if (!file) return;
+			const dir = await pickedDirectory(file);
+			if (!dir) {
+				await toast("拿不到这个目录的本地路径，试着把文件夹直接拖进窗口", "error");
+				return;
+			}
+			await chooseDir(dir);
+		});
+
+		nodes.dirRefresh.addEventListener("click", async () => {
+			await chooseDir(dirState.dir || String(latest?.config?.sourceDir ?? ""));
+		});
+
 		for (const type of ["dragenter", "dragover"]) {
 			document.addEventListener(type, (event) => {
 				event.preventDefault();
@@ -387,9 +577,16 @@
 		document.addEventListener("drop", async (event) => {
 			const file = event.dataTransfer?.files?.[0];
 			if (!file) return;
-			const path2 = await droppedPath(file);
+			const path2 = await filePathOf(file);
 			if (!path2) {
 				toast("拿不到这个文件的本地路径", "error");
+				return;
+			}
+			// A dropped folder is a persona *directory*: only the host can tell a directory
+			// from a file, so ask it before treating the drop as a persona file.
+			const listing = await listDir(path2);
+			if (listing) {
+				await chooseDir(path2);
 				return;
 			}
 			nodes.sourceInput.value = path2;
